@@ -1,19 +1,116 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+# Disable CI and PR triggers properly
+trigger: none
+pr: none
 
-trigger:
-- master
+resources:
+  repositories:
+  - repository: self
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: windows-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+parameters:
+- name: SubscriptionName
+  displayName: subscription
+  type: string
+  default: "i026-09-d1-spk-sub-001"
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+- name: environment
+  displayName: crims environment
+  type: string
+  default: "nonprod"
+  values:
+  - nonprod
+  - prod
+
+- name: location
+  displayName: location
+  type: string
+  default: "eastus"
+
+- name: mt_resource_group
+  displayName: mt_resource_group
+  type: string
+  default: "i026-09-d1-mt-crims-rg-001"
+
+# For nonprod, supply a comma-separated string of VMs
+- name: mt_vm_names
+  displayName: mt_vm_names (comma-separated for nonprod)
+  type: string
+  default: "i02609d1crnw002,i02609d2crnw002"
+
+# For prod, generate from prefix/count/startcount
+- name: prod_mt_vm_name_prefix
+  displayName: prod_mt_vm_name_prefix
+  type: string
+  default: "i02609d1crnw"
+
+- name: prod_mt_resource_group
+  displayName: prod_mt_resource_group
+  type: string
+  default: "i007-32-p1-mt-crims-rg-001"
+
+- name: prod_mt_vm_count
+  displayName: prod_mt_vm_count
+  type: number
+  default: 2
+
+- name: prod_mt_vm_startcount
+  displayName: prod_mt_vm_startcount
+  type: number
+  default: 2
+
+variables:
+- name: pipelinename
+  value: i026-09-d1-spk-sub-001
+- name: env
+  value: 'dev'
+
+stages:
+- stage: INITIALSETUP
+  displayName: INITIAL SETUP
+  jobs:
+  - job: BuildJob
+    displayName: 'Prepare sub directory'
+    steps:
+    # If you don't want to checkout the repo, use this:
+    - checkout: none
+
+    - task: PowerShell@2
+      name: SetVms
+      displayName: Compute VM list
+      inputs:
+        targetType: 'inline'
+        script: >
+          Write-Host "Environment: ${{ parameters.environment }}"
+
+          if ("${{ parameters.environment }}" -eq "prod") {
+            $vmPrefix   = "${{ parameters.prod_mt_vm_name_prefix }}"
+            $count      = [int]"${{ parameters.prod_mt_vm_count }}"
+            $startcount = [int]"${{ parameters.prod_mt_vm_startcount }}"
+
+            $vmNames = @()
+            for ($i = 0; $i -lt $count; $i++) {
+              $vmNumber = $startcount + $i
+              $vmName = "{0}{1:D3}" -f $vmPrefix, $vmNumber
+              $vmNames += $vmName
+            }
+            $vmList = $vmNames -join ","
+            Write-Host "Generated PROD VM Names: $vmList"
+          }
+          else {
+            # Nonprod: use the provided comma-separated list, normalized
+            $raw = "${{ parameters.mt_vm_names }}"
+            $arr = $raw -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" }
+            $vmList = $arr -join ","
+            Write-Host "Using NONPROD VM Names: $vmList"
+          }
+
+          # Output variable for downstream jobs/stages if needed
+          Write-Host "##vso[task.setvariable variable=mt_vm_names;isOutput=true]$vmList"
+          Write-Host "##vso[task.setvariable variable=resource_group;isOutput=true]${{ parameters.mt_resource_group }}"
+          if ("${{ parameters.environment }}" -eq "prod") {
+            Write-Host "##vso[task.setvariable variable=resource_group;isOutput=true]${{ parameters.prod_mt_resource_group }}"
+          }
+
+
