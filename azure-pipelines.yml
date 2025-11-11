@@ -60,11 +60,6 @@ parameters:
   type: number
   default: 2
 
-variables:
-- name: pipelinename
-  value: i026-09-d1-spk-sub-001
-- name: env
-  value: 'dev'
 
 stages:
 - stage: INITIALSETUP
