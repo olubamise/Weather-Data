@@ -13,7 +13,7 @@ parameters:
 - name: SubscriptionName
   displayName: subscription
   type: string
-  default: "i026-09-d1-spk-sub-001"
+  default: "ME-MngEnvMCAP074743-jaiyeoribe-1"
 
 - name: environment
   displayName: crims environment
