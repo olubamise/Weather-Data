@@ -31,7 +31,7 @@ parameters:
 - name: mt_resource_group
   displayName: mt_resource_group
   type: string
-  default: "i026-09-d1-mt-crims-rg-001"
+  default: "rg-test"
 
 # For nonprod, supply a comma-separated string of VMs
 - name: mt_vm_names
@@ -48,7 +48,7 @@ parameters:
 - name: prod_mt_resource_group
   displayName: prod_mt_resource_group
   type: string
-  default: "i007-32-p1-mt-crims-rg-001"
+  default: "rg-test-prod"
 
 - name: prod_mt_vm_count
   displayName: prod_mt_vm_count
