@@ -4,7 +4,7 @@ pr: none
 
 resources:
   repositories:
-  - repository: self
+    - repository: self
 
 pool:
   vmImage: windows-latest
@@ -66,9 +66,9 @@ stages:
   displayName: INITIAL SETUP
   jobs:
   - job: BuildJob
-    displayName: 'Prepare sub directory'
+    displayName: 'Compute VM list and output variables'
     steps:
-    # If you don't want to checkout the repo, use this:
+    # If you don't want to checkout the repo, keep this as none
     - checkout: none
 
     - task: PowerShell@2
@@ -76,36 +76,72 @@ stages:
       displayName: Compute VM list
       inputs:
         targetType: 'inline'
-        script: >
+        # Use | for multiline script; avoid HTML-escaped characters
+        script: |
           Write-Host "Environment: ${{ parameters.environment }}"
+          Write-Host "Location:    ${{ parameters.location }}"
+          Write-Host "Sub:         ${{ parameters.SubscriptionName }}"
 
+          # region Compute VM list
           if ("${{ parameters.environment }}" -eq "prod") {
-            $vmPrefix   = "${{ parameters.prod_mt_vm_name_prefix }}"
+            $vmPrefix   = "${{ parameters.prod_mt_vm_name_prefix }}".Trim()
             $count      = [int]"${{ parameters.prod_mt_vm_count }}"
             $startcount = [int]"${{ parameters.prod_mt_vm_startcount }}"
+
+            if ([string]::IsNullOrWhiteSpace($vmPrefix)) {
+              throw "prod_mt_vm_name_prefix cannot be empty for prod."
+            }
+            if ($count -le 0) {
+              throw "prod_mt_vm_count must be > 0."
+            }
 
             $vmNames = @()
             for ($i = 0; $i -lt $count; $i++) {
               $vmNumber = $startcount + $i
+              # Format with 3 digits (e.g., 002, 003)
               $vmName = "{0}{1:D3}" -f $vmPrefix, $vmNumber
               $vmNames += $vmName
             }
             $vmList = $vmNames -join ","
             Write-Host "Generated PROD VM Names: $vmList"
+
+            # resource group for prod
+            $rgName = "${{ parameters.prod_mt_resource_group }}"
           }
           else {
             # Nonprod: use the provided comma-separated list, normalized
             $raw = "${{ parameters.mt_vm_names }}"
             $arr = $raw -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" }
+
+            if ($arr.Count -eq 0) {
+              throw "mt_vm_names must contain at least one VM name for nonprod."
+            }
+
             $vmList = $arr -join ","
             Write-Host "Using NONPROD VM Names: $vmList"
-          }
 
-          # Output variable for downstream jobs/stages if needed
+            # resource group for nonprod
+            $rgName = "${{ parameters.mt_resource_group }}"
+          }
+          # endregion
+
+          # Emit output variables for downstream jobs/stages
           Write-Host "##vso[task.setvariable variable=mt_vm_names;isOutput=true]$vmList"
-          Write-Host "##vso[task.setvariable variable=resource_group;isOutput=true]${{ parameters.mt_resource_group }}"
-          if ("${{ parameters.environment }}" -eq "prod") {
-            Write-Host "##vso[task.setvariable variable=resource_group;isOutput=true]${{ parameters.prod_mt_resource_group }}"
-          }
+          Write-Host "##vso[task.setvariable variable=resource_group;isOutput=true]$rgName"
 
-
+  # ---------------------------------------------------------------------------
+  # (Optional) Example consumer job showing how to read the outputs
+  # Uncomment to test consumption of outputs
+  #
+  # - job: ConsumeOutputs
+  #   displayName: 'Consume VM list outputs'
+  #   dependsOn: BuildJob
+  #   variables:
+  #     VM_LIST: $[ dependencies.BuildJob.outputs['SetVms.mt_vm_names'] ]
+  #     RG_NAME: $[ dependencies.BuildJob.outputs['SetVms.resource_group'] ]
+  #   steps:
+  #   - powershell: |
+  #       Write-Host "From previous job - VM_LIST: $(VM_LIST)"
+  #       Write-Host "From previous job - RG_NAME: $(RG_NAME)"
+  #     displayName: 'Show outputs'
+  # ---------------------------------------------------------------------------
