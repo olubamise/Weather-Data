@@ -1,19 +1,78 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
+# Azure DevOps pipeline: Resource Group 'what-if' with Bicep
 trigger:
-- master
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - modules/**
+      - main.bicep
+      - main.*.bicepparam
+      - pipelines/azurepipelines-*.yml
+    exclude:
+      - pipelines/azurepipelines-integrationtests-cd.yml
 
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
+  # Global defaults (override per stage if needed)
+  templateFile: 'main.bicep'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+stages:
+- stage: deve
+  displayName: Development
+  variables:
+    subscription: 'ME-MngEnvMCAP074743-jaiyeoribe-1'   # <-- ADO service connection name (update to your exact name)
+    resourceGroup: 'rg-2511170040007559'
+    parameterFile: 'main.deve.bicepparam'
+  jobs:
+  - deployment: whatif
+    displayName: Bicep What-If (RG)
+    environment:
+      name: 'contentplatform-development'   # optional; used for approvals/traceability
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+            persistCredentials: false
+
+          - task: AzureCLI@2
+            displayName: Azure CLI Version Check
+            inputs:
+              azureSubscription: ME-MngEnvMCAP074743-jaiyeoribe-1
+              scriptType: bash
+              scriptLocation: inlineScript
+              workingDirectory: $(System.DefaultWorkingDirectory)
+              inlineScript: |
+                set -euo pipefail
+                echo "Checking Azure CLI and Bicep..."
+                az --version
+                # Optional sanity check; if it fails, we still can deploy because az supports bicep files.
+                az bicep version || echo "az bicep not listed; Azure CLI will still process .bicep via built-in support."
+
+          - task: AzureCLI@2
+            displayName: az deployment validate
+            inputs:
+              azureSubscription: $(subscription)   # ADO Service Connection (classic or workload identity)
+              scriptType: bash
+              scriptLocation: inlineScript
+              workingDirectory: $(System.DefaultWorkingDirectory)
+              failOnStandardError: true
+              inlineScript: |
+                set -euo pipefail
+                RG="$(resourceGroup)"
+                TEMPLATE="$(templateFile)"
+                PARAMS="$(parameterFile)"
+
+                echo "Running what-if against resource group: ${RG}"
+                echo "Template: ${TEMPLATE}"
+                echo "Parameters: ${PARAMS}"
+
+                az deployment group what-if \
+                  --resource-group "${RG}" \
+                  --template-file "${TEMPLATE}" \
+                  --parameters "${PARAMS}" \
+                  --mode Incremental \
+                  --verbose
