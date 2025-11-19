@@ -23,7 +23,7 @@ stages:
 - stage: deve
   displayName: Development
   variables:
-    subscription: 'ME-MngEnvMCAP074743-jaiyeoribe-1'   # <-- ADO service connection name (update to your exact name)
+    subscription: 'sc-2511170040007559'   # <-- ADO service connection name (update to your exact name)
     resourceGroup: 'rg-2511170040007559'
     parameterFile: 'main.deve.bicepparam'
   jobs:
@@ -41,7 +41,7 @@ stages:
           - task: AzureCLI@2
             displayName: Azure CLI Version Check
             inputs:
-              azureSubscription: ME-MngEnvMCAP074743-jaiyeoribe-1
+              azureSubscription: sc-2511170040007559
               scriptType: bash
               scriptLocation: inlineScript
               workingDirectory: $(System.DefaultWorkingDirectory)
@@ -55,7 +55,7 @@ stages:
           - task: AzureCLI@2
             displayName: az deployment validate
             inputs:
-              azureSubscription: $(subscription)   # ADO Service Connection (classic or workload identity)
+              azureSubscription: sc-2511170040007559   # ADO Service Connection (classic or workload identity)
               scriptType: bash
               scriptLocation: inlineScript
               workingDirectory: $(System.DefaultWorkingDirectory)
