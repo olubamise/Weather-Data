@@ -14,6 +14,9 @@ trigger:
 
 pool:
   name: 'ubuntu-vm'
+  demands:
+   - Agent.Version -gtVersion 2.163.1
+
 
 variables:
   # Global defaults (override per stage if needed)
