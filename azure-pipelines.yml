@@ -13,7 +13,7 @@ trigger:
       - pipelines/azurepipelines-integrationtests-cd.yml
 
 pool:
-  name: 'test-windows-vm'
+  vmImage: 'ubuntu-latest'
 
 variables:
   # Global defaults (override per stage if needed)
