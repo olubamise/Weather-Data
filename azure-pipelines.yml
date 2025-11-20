@@ -13,9 +13,8 @@ trigger:
       - pipelines/azurepipelines-integrationtests-cd.yml
 
 pool:
-  name: 'ubuntu-vm'
-  demands:
-   - Agent.Version -gtVersion 2.163.1
+  vmImage: 'ubuntu-latest'
+
 
 
 variables:
