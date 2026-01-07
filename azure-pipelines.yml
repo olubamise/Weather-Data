@@ -71,6 +71,6 @@ stages:
 
         - script: |
             echo "Starting Domain Controller deletion..."
-            # Insert actual deletion logic here (PowerShell/CLI/remoting)
+            
             echo "Domain Controller deletion completed."
           displayName: "Run deletion logic"
