@@ -1,80 +1,80 @@
-# Azure DevOps pipeline: Resource Group 'what-if' with Bicep
-trigger:
-  branches:
-    include:
-      - main
-  paths:
-    include:
-      - modules/**
-      - main.bicep
-      - main.*.bicepparam
-      - pipelines/azurepipelines-*.yml
-    exclude:
-      - pipelines/azurepipelines-integrationtests-cd.yml
 
-pool:
-  vmImage: 'ubuntu-latest'
-
-
-
-variables:
-  # Global defaults (override per stage if needed)
-  templateFile: 'main.bicep'
+# ============================================================
+# Pipeline excerpt with dependency result diagnostics
+# ============================================================
 
 stages:
-- stage: deve
-  displayName: Development
-  variables:
-    subscription: 'sc-2511170040007559'   # <-- ADO service connection name (update to your exact name)
-    resourceGroup: 'rg-2511170040007559'
-    parameterFile: 'main.deve.bicepparam'
+
+# -------------------------------
+# Stage 1: UI Placeholder
+# -------------------------------
+- stage: UI_Placeholder2
+  displayName: "UI Placeholder"
   jobs:
-  - deployment: whatif
-    displayName: Bicep What-If (RG)
-    environment:
-      name: 'contentplatform-development'   # optional; used for approvals/traceability
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - checkout: self
-            persistCredentials: false
+    - job: ui_placeholder_job
+      displayName: "Run UI placeholder steps"
+      pool:
+        vmImage: 'ubuntu-latest'
+      steps:
+        - script: |
+            echo "UI placeholder work begins..."
+            echo "UI placeholder completed."
+          displayName: "Execute UI placeholder"
 
-          - task: AzureCLI@2
-            displayName: Azure CLI Version Check
-            inputs:
-              azureSubscription: sc-2511170040007559
-              scriptType: bash
-              scriptLocation: inlineScript
-              workingDirectory: $(System.DefaultWorkingDirectory)
-              inlineScript: |
-                set -euo pipefail
-                echo "Checking Azure CLI and Bicep..."
-                az --version
-                # Optional sanity check; if it fails, we still can deploy because az supports bicep files.
-                az bicep version || echo "az bicep not listed; Azure CLI will still process .bicep via built-in support."
+# -------------------------------
+# Stage 2: Windows 2025 Single PI Server AF2 Tests
+# -------------------------------
+- stage: run_tests_SinglePIServerAF2_windows2025
+  displayName: "Test: Win25 Single PI Server AF2"
+  dependsOn:
+    - UI_Placeholder2
+  jobs:
+    - job: run_tests_win25_job
+      displayName: "Run Windows 2025 tests"
+      pool:
+        vmImage: 'windows-latest'   # use your Windows Server 2025/self-hosted agent as needed
+      steps:
+        - powershell: |
+            Write-Host "Starting tests on Windows 2025 Single PI Server AF2..."
+            # Replace with real test command(s)
+            Write-Host "Simulating tests complete."
+          displayName: "Execute AF2 tests (Win2025)"
 
-          - task: AzureCLI@2
-            displayName: az deployment validate
-            inputs:
-              azureSubscription: sc-2511170040007559   # ADO Service Connection (classic or workload identity)
-              scriptType: bash
-              scriptLocation: inlineScript
-              workingDirectory: $(System.DefaultWorkingDirectory)
-              failOnStandardError: true
-              inlineScript: |
-                set -euo pipefail
-                RG="$(resourceGroup)"
-                TEMPLATE="$(templateFile)"
-                PARAMS="$(parameterFile)"
+# -------------------------------
+# Stage 3: Delete Domain Controller
+# -------------------------------
+- stage: delete_domain_controller
+  displayName: "Delete Domain Controller"
+  dependsOn:
+    - UI_Placeholder2
+    - run_tests_SinglePIServerAF2_windows2025
+    # If you later add Win22/Win19 stages, include them here:
+    # - run_tests_SinglePIServerAF2_windows2022
+    # - run_tests_SinglePIServerAF2_windows2019
 
-                echo "Running what-if against resource group: ${RG}"
-                echo "Template: ${TEMPLATE}"
-                echo "Parameters: ${PARAMS}"
+  # Only run when all dependencies succeeded (or succeeded with issues)
+  condition: succeeded()
 
-                az deployment group what-if \
-                  --resource-group "${RG}" \
-                  --template-file "${TEMPLATE}" \
-                  --parameters "${PARAMS}" \
-                  --mode Incremental \
-                  --verbose
+  jobs:
+    - job: delete_dc_job
+      displayName: "Execute Domain Controller deletion"
+      pool:
+        vmImage: 'ubuntu-latest'
+      steps:
+        # ------------------------------------------------------------
+        # Diagnostics: echo dependency results for quick visibility
+        # ------------------------------------------------------------
+        - script: |
+            echo "== Dependency results (as seen by this stage) =="
+            echo "UI_Placeholder2: $(dependencies.UI_Placeholder2.result)"
+            echo "Win25 Tests    : $(dependencies.run_tests_SinglePIServerAF2_windows2025.result)"
+            # Uncomment if/when you add more dependencies:
+            # echo "Win22 Tests    : $(dependencies.run_tests_SinglePIServerAF2_windows2022.result)"
+            # echo "Win19 Tests    : $(dependencies.run_tests_SinglePIServerAF2_windows2019.result)"
+          displayName: "Echo dependency results"
+
+        - script: |
+            echo "Starting Domain Controller deletion..."
+            # Insert actual deletion logic here (PowerShell/CLI/remoting)
+            echo "Domain Controller deletion completed."
+          displayName: "Run deletion logic"
