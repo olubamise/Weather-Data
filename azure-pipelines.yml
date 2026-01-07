@@ -24,18 +24,18 @@ stages:
 # -------------------------------
 # Stage 2: Windows 2025 Single PI Server AF2 Tests
 # -------------------------------
-- stage: run_tests_SinglePIServerAF2_windows2025
+- stage: run_tests_SinglePIServerAF2_windows2022
   displayName: "Test: Win25 Single PI Server AF2"
   dependsOn:
     - UI_Placeholder2
   jobs:
-    - job: run_tests_win25_job
-      displayName: "Run Windows 2025 tests"
+    - job: run_tests_win22_job
+      displayName: "Run Windows 2022 tests"
       pool:
         name: 'test-windows-vm'   # use your Windows Server 2025/self-hosted agent as needed
       steps:
         - powershell: |
-            Write-Host "Starting tests on Windows 2025 Single PI Server AF2..."
+            Write-Host "Starting tests on Windows 2022 Single PI Server AF2..."
             # Replace with real test command(s)
             Write-Host "Simulating tests complete."
           displayName: "Execute AF2 tests (Win2025)"
@@ -47,10 +47,8 @@ stages:
   displayName: "Delete Domain Controller"
   dependsOn:
     - UI_Placeholder2
-    - run_tests_SinglePIServerAF2_windows2025
-    # If you later add Win22/Win19 stages, include them here:
-    # - run_tests_SinglePIServerAF2_windows2022
-    # - run_tests_SinglePIServerAF2_windows2019
+    - run_tests_SinglePIServerAF2_windows2022
+
 
   # Only run when all dependencies succeeded (or succeeded with issues)
   condition: succeeded()
@@ -67,10 +65,8 @@ stages:
         - script: |
             echo "== Dependency results (as seen by this stage) =="
             echo "UI_Placeholder2: $(dependencies.UI_Placeholder2.result)"
-            echo "Win25 Tests    : $(dependencies.run_tests_SinglePIServerAF2_windows2025.result)"
-            # Uncomment if/when you add more dependencies:
-            # echo "Win22 Tests    : $(dependencies.run_tests_SinglePIServerAF2_windows2022.result)"
-            # echo "Win19 Tests    : $(dependencies.run_tests_SinglePIServerAF2_windows2019.result)"
+            echo "Win22 Tests    : $(dependencies.run_tests_SinglePIServerAF2_windows2022.result)"
+
           displayName: "Echo dependency results"
 
         - script: |
