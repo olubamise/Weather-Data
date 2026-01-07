@@ -14,7 +14,7 @@ stages:
     - job: ui_placeholder_job
       displayName: "Run UI placeholder steps"
       pool:
-        vmImage: 'ubuntu-latest'
+        name: 'test-windows-vm'
       steps:
         - script: |
             echo "UI placeholder work begins..."
@@ -32,7 +32,7 @@ stages:
     - job: run_tests_win25_job
       displayName: "Run Windows 2025 tests"
       pool:
-        vmImage: 'windows-latest'   # use your Windows Server 2025/self-hosted agent as needed
+        name: 'test-windows-vm'   # use your Windows Server 2025/self-hosted agent as needed
       steps:
         - powershell: |
             Write-Host "Starting tests on Windows 2025 Single PI Server AF2..."
@@ -59,7 +59,7 @@ stages:
     - job: delete_dc_job
       displayName: "Execute Domain Controller deletion"
       pool:
-        vmImage: 'ubuntu-latest'
+        name: 'test-windows-vm'
       steps:
         # ------------------------------------------------------------
         # Diagnostics: echo dependency results for quick visibility
