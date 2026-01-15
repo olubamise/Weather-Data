@@ -1,54 +1,108 @@
 
 # ============================================================
-# Pipeline excerpt with dependency result diagnostics
+# Pipeline with explicit dependency stages + diagnostics
 # ============================================================
 
 stages:
 
 # -------------------------------
-# Stage 1: UI Placeholder
+# Stage 0: Prepare Environment
+# -------------------------------
+- stage: prepare_environment
+  displayName: "Prepare Environment"
+  jobs:
+    - job: prep_env_job
+      displayName: "Prepare build/test environment"
+      pool:
+        name: 'test-windows-vm'
+      steps:
+        - script: |
+            echo "Preparing environment (install tools, validate prereqs, etc.)..."
+            echo "Environment preparation completed."
+          displayName: "Run environment preparation"
+
+# -------------------------------
+# Stage 1: Build Artifacts
+# -------------------------------
+- stage: build_artifacts
+  displayName: "Build Artifacts"
+  dependsOn:
+    - prepare_environment
+  condition: succeeded()    # only build if environment prep succeeded
+  jobs:
+    - job: build_job
+      displayName: "Build job"
+      pool:
+        name: 'test-windows-vm'
+      steps:
+        - script: |
+            echo "Building artifacts..."
+            echo "Build completed."
+          displayName: "Run build"
+
+# -------------------------------
+# Stage 2: UI Placeholder (now with dependencies)
 # -------------------------------
 - stage: UI_Placeholder2
   displayName: "UI Placeholder"
+  dependsOn:
+    - prepare_environment
+    - build_artifacts
+  condition: succeeded()    # ensure both deps succeeded
   jobs:
     - job: ui_placeholder_job
       displayName: "Run UI placeholder steps"
       pool:
         name: 'test-windows-vm'
       steps:
+        # Diagnostics for dependency results visible to this stage
+        - script: |
+            echo "== Dependency results (as seen by UI_Placeholder2) =="
+            echo "prepare_environment: $(dependencies.prepare_environment.result)"
+            echo "build_artifacts    : $(dependencies.build_artifacts.result)"
+          displayName: "Echo dependency results (UI_Placeholder2)"
+
         - script: |
             echo "UI placeholder work begins..."
             echo "UI placeholder completed."
           displayName: "Execute UI placeholder"
 
 # -------------------------------
-# Stage 2: Windows 2025 Single PI Server AF2 Tests
+# Stage 3: Windows 2022 Single PI Server AF2 Tests (now with dependencies)
 # -------------------------------
 - stage: run_tests_SinglePIServerAF2_windows2022
-  displayName: "Test: Win25 Single PI Server AF2"
+  displayName: "Test: Win22 Single PI Server AF2"
   dependsOn:
     - UI_Placeholder2
+    - build_artifacts
+  condition: succeeded()    # only run tests if deps succeeded
   jobs:
     - job: run_tests_win22_job
       displayName: "Run Windows 2022 tests"
       pool:
-        name: 'test-windows-vm'   # use your Windows Server 2025/self-hosted agent as needed
+        name: 'test-windows-vm'   # use your Windows Server/self-hosted agent as needed
       steps:
+        # Diagnostics for dependency results visible to this stage
+        - script: |
+            echo "== Dependency results (as seen by run_tests_SinglePIServerAF2_windows2022) =="
+            echo "UI_Placeholder2: $(dependencies.UI_Placeholder2.result)"
+            echo "build_artifacts: $(dependencies.build_artifacts.result)"
+          displayName: "Echo dependency results (Tests)"
+
         - powershell: |
             Write-Host "Starting tests on Windows 2022 Single PI Server AF2..."
             # Replace with real test command(s)
             Write-Host "Simulating tests complete."
-          displayName: "Execute AF2 tests (Win2025)"
+          displayName: "Execute AF2 tests (Win2022)"
 
 # -------------------------------
-# Stage 3: Delete Domain Controller
+# Stage 4: Delete Domain Controller
 # -------------------------------
 - stage: delete_domain_controller
   displayName: "Delete Domain Controller"
   dependsOn:
     - UI_Placeholder2
     - run_tests_SinglePIServerAF2_windows2022
-
 
   # Only run when all dependencies succeeded (or succeeded with issues)
   condition: succeeded()
@@ -63,14 +117,13 @@ stages:
         # Diagnostics: echo dependency results for quick visibility
         # ------------------------------------------------------------
         - script: |
-            echo "== Dependency results (as seen by this stage) =="
+            echo "== Dependency results (as seen by delete_domain_controller) =="
             echo "UI_Placeholder2: $(dependencies.UI_Placeholder2.result)"
             echo "Win22 Tests    : $(dependencies.run_tests_SinglePIServerAF2_windows2022.result)"
-
-          displayName: "Echo dependency results"
+          displayName: "Echo dependency results (Delete DC)"
 
         - script: |
             echo "Starting Domain Controller deletion..."
-            
+            # Replace with actual deletion steps (e.g., AD cmdlets, teardown scripts, etc.)
             echo "Domain Controller deletion completed."
           displayName: "Run deletion logic"
