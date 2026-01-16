@@ -124,6 +124,4 @@ stages:
 
         - script: |
             echo "Starting Domain Controller deletion..."
-            # Replace with actual deletion steps (e.g., AD cmdlets, teardown scripts, etc.)
             echo "Domain Controller deletion completed."
-          displayName: "Run deletion logic"
