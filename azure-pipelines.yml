@@ -3,6 +3,21 @@
 # ============================================================
 
 stages:
+
+- stage: D
+  displayName: "D"
+
+  condition: succeeded()   
+  jobs:
+    - job: job_D
+      displayName: "Execute Job-D"
+      pool:
+        name: 'test-windows-vm'
+      steps:
+        # Diagnostics for dependency results visible to this stage
+        - script: |
+            echo "D completed..."
+            echo "Job D completed..."
 - stage: C
   displayName: "C"
   condition: and(succeeded(), false)
@@ -22,8 +37,6 @@ stages:
             throw "Intentional build failure"
           displayName: "Force failure"
           failOnStderr: true
-
-
 - stage: B
   displayName: "B"
   dependsOn:
@@ -38,7 +51,7 @@ stages:
         # Diagnostics for dependency results visible to this stage
         - script: |
             echo "B completed..."
-            echo "Job B completed..."
+            echo "Job B completed...""
 
 - stage: A
   displayName: "A"
@@ -55,4 +68,4 @@ stages:
       steps:
         - script: |
             echo "A completed..."
-            echo "Job A completed..."
+            echo "Job A completed...""
