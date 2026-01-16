@@ -109,7 +109,7 @@ stages:
     - run_tests_SinglePIServerAF2_windows2022
 
   # Only run when all dependencies succeeded (or succeeded with issues)
-  condition: succeeded()
+  condition: in(dependencies.UI_Placeholder2.result, 'Succeeded', 'SucceededWithIssues', 'Skipped', 'failed')
 
   jobs:
     - job: delete_dc_job
