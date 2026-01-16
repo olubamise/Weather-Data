@@ -18,6 +18,7 @@ stages:
         - script: |
             echo "D completed..."
             echo "Job D completed..."
+
 - stage: C
   displayName: "C"
   condition: and(succeeded(), false)
@@ -56,9 +57,8 @@ stages:
 - stage: A
   displayName: "A"
   dependsOn:
-    - B
-
-  condition: succeeded()
+    - C
+  condition: in(dependencies.C.result, 'Succeeded', 'SucceededWithIssues', 'Skipped')
 
   jobs:
     - job: job_A
