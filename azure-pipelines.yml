@@ -5,6 +5,7 @@
 stages:
 - stage: C
   displayName: "C"
+  condition: and(succeeded(), false)
   jobs:
     - job: job_C
       displayName: "Execute Job-C"
