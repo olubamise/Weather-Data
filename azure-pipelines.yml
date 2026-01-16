@@ -3,10 +3,6 @@
 # ============================================================
 
 stages:
-
-# -------------------------------
-# Stage 0: C
-# -------------------------------
 - stage: C
   displayName: "C"
   jobs:
@@ -18,11 +14,15 @@ stages:
         - script: |
             echo "C completed..."
             echo "Job C completed..."
+          
+          displayName: "Begin Job C to fail (announce intent)"
+        - powershell: |
+            Write-Host "Forcing build failure to test downstream dependency behavior..."
+            throw "Intentional build failure"
+          displayName: "Force failure"
+          failOnStderr: true
 
 
-# -------------------------------
-# Stage 1: B (depends on failed build; will be skipped)
-# -------------------------------
 - stage: B
   displayName: "B"
   dependsOn:
@@ -39,16 +39,11 @@ stages:
             echo "B completed..."
             echo "Job B completed..."
 
-
-# -------------------------------
-# Stage 2: A (deps failed/skipped; will be skipped)
-# -------------------------------
 - stage: A
   displayName: "A"
   dependsOn:
     - B
 
-  # Only run when all dependencies succeeded (or succeeded with issues)
   condition: succeeded()
 
   jobs:
@@ -57,9 +52,6 @@ stages:
       pool:
         name: 'test-windows-vm'
       steps:
-        # ------------------------------------------------------------
-        # Diagnostics: echo dependency results for quick visibility
-        # ------------------------------------------------------------
         - script: |
             echo "A completed..."
             echo "Job A completed..."
