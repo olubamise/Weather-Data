@@ -5,115 +5,55 @@
 stages:
 
 # -------------------------------
-# Stage 0: Prepare Environment
+# Stage 0: C
 # -------------------------------
-- stage: prepare_environment
-  displayName: "Prepare Environment"
+- stage: C
+  displayName: "C"
   jobs:
-    - job: prep_env_job
-      displayName: "Prepare build/test environment"
+    - job: job_C
+      displayName: "Execute Job-C"
       pool:
         name: 'test-windows-vm'
       steps:
         - script: |
-            echo "Preparing environment (install tools, validate prereqs, etc.)..."
-            echo "Environment preparation completed."
-          displayName: "Run environment preparation"
+            echo "C completed..."
+            echo "Job C completed..."
+
 
 # -------------------------------
-# Stage 1: Build Artifacts (INTENTIONALLY FAILS)
+# Stage 1: B (depends on failed build; will be skipped)
 # -------------------------------
-- stage: build_artifacts
-  displayName: "Build Artifacts (Intentional Failure)"
+- stage: B
+  displayName: "B"
   dependsOn:
-    - prepare_environment
-  condition: succeeded()    # only build if environment prep succeeded
+    - C
+  condition: succeeded()   
   jobs:
-    - job: build_job
-      displayName: "Build job (will fail)"
-      pool:
-        name: 'test-windows-vm'
-      steps:
-        - script: |
-            echo "Building artifacts..."
-            echo "This build is configured to fail intentionally for dependency testing."
-          displayName: "Begin build (announce intent)"
-        - powershell: |
-            Write-Host "Forcing build failure to test downstream dependency behavior..."
-            throw "Intentional build failure"
-          displayName: "Force failure"
-          failOnStderr: true
-
-# -------------------------------
-# Stage 2: UI Placeholder (depends on failed build; will be skipped)
-# -------------------------------
-- stage: UI_Placeholder2
-  displayName: "UI Placeholder"
-  dependsOn:
-    - prepare_environment
-    - build_artifacts
-  condition: succeeded()    # ensure both deps succeeded
-  jobs:
-    - job: ui_placeholder_job
-      displayName: "Run UI placeholder steps"
+    - job: job_B
+      displayName: "Execute Job-B"
       pool:
         name: 'test-windows-vm'
       steps:
         # Diagnostics for dependency results visible to this stage
         - script: |
-            echo "== Dependency results (as seen by UI_Placeholder2) =="
-            echo "prepare_environment: $(dependencies.prepare_environment.result)"
-            echo "build_artifacts    : $(dependencies.build_artifacts.result)"
-          displayName: "Echo dependency results (UI_Placeholder2)"
+            echo "B completed..."
+            echo "Job B completed..."
 
-        - script: |
-            echo "UI placeholder work begins..."
-            echo "UI placeholder completed."
-          displayName: "Execute UI placeholder"
 
 # -------------------------------
-# Stage 3: Windows 2022 Single PI Server AF2 Tests (depends on failed build; will be skipped)
+# Stage 2: A (deps failed/skipped; will be skipped)
 # -------------------------------
-- stage: run_tests_SinglePIServerAF2_windows2022
-  displayName: "Test: Win22 Single PI Server AF2"
+- stage: A
+  displayName: "A"
   dependsOn:
-    - UI_Placeholder2
-    - build_artifacts
-  condition: succeeded()    # only run tests if deps succeeded
-  jobs:
-    - job: run_tests_win22_job
-      displayName: "Run Windows 2022 tests"
-      pool:
-        name: 'test-windows-vm'   # use your Windows Server/self-hosted agent as needed
-      steps:
-        # Diagnostics for dependency results visible to this stage
-        - script: |
-            echo "== Dependency results (as seen by run_tests_SinglePIServerAF2_windows2022) =="
-            echo "UI_Placeholder2: $(dependencies.UI_Placeholder2.result)"
-            echo "build_artifacts: $(dependencies.build_artifacts.result)"
-          displayName: "Echo dependency results (Tests)"
-
-        - powershell: |
-            Write-Host "Starting tests on Windows 2022 Single PI Server AF2..."
-            # Replace with real test command(s)
-            Write-Host "Simulating tests complete."
-          displayName: "Execute AF2 tests (Win2022)"
-
-# -------------------------------
-# Stage 4: Delete Domain Controller (deps failed/skipped; will be skipped)
-# -------------------------------
-- stage: delete_domain_controller
-  displayName: "Delete Domain Controller"
-  dependsOn:
-    - UI_Placeholder2
-    - run_tests_SinglePIServerAF2_windows2022
+    - B
 
   # Only run when all dependencies succeeded (or succeeded with issues)
-  condition: in(dependencies.UI_Placeholder2.result, 'Succeeded', 'SucceededWithIssues', 'Skipped', 'failed')
+  condition: succeeded()
 
   jobs:
-    - job: delete_dc_job
-      displayName: "Execute Domain Controller deletion"
+    - job: job_A
+      displayName: "Execute job-A"
       pool:
         name: 'test-windows-vm'
       steps:
@@ -121,12 +61,5 @@ stages:
         # Diagnostics: echo dependency results for quick visibility
         # ------------------------------------------------------------
         - script: |
-            echo "== Dependency results (as seen by delete_domain_controller) =="
-            echo "UI_Placeholder2: $(dependencies.UI_Placeholder2.result)"
-            echo "Win22 Tests    : $(dependencies.run_tests_SinglePIServerAF2_windows2022.result)"
-          displayName: "Echo dependency results (Delete DC)"
-
-        - script: |
-            echo "Starting Domain Controller deletion..."
-            echo "Domain Controller deletion completed."
-          displayName: "Run deletion logic"
+            echo "A completed..."
+            echo "Job A completed..."
