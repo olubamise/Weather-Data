@@ -57,8 +57,8 @@ stages:
 - stage: A
   displayName: "A"
   dependsOn:
-    - C
-  condition: in(dependencies.C.result, 'Succeeded', 'SucceededWithIssues', 'Skipped')
+    - B
+  condition: in(dependencies.B.result, 'Succeeded', 'SucceededWithIssues', 'Skipped')
 
   jobs:
     - job: job_A
