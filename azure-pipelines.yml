@@ -12,7 +12,7 @@ stages:
     - job: job_D
       displayName: "Execute Job-D"
       pool:
-        name: 'test-windows-vm'
+        vmImage: 'ubuntu-latest'
       steps:
         # Diagnostics for dependency results visible to this stage
         - script: |
@@ -26,7 +26,7 @@ stages:
     - job: job_C
       displayName: "Execute Job-C"
       pool:
-        name: 'test-windows-vm'
+        vmImage: 'ubuntu-latest'
       steps:
         - script: |
             echo "C completed..."
@@ -47,7 +47,7 @@ stages:
     - job: job_B
       displayName: "Execute Job-B"
       pool:
-        name: 'test-windows-vm'
+        vmImage: 'ubuntu-latest'
       steps:
         # Diagnostics for dependency results visible to this stage
         - script: |
@@ -64,7 +64,7 @@ stages:
     - job: job_A
       displayName: "Execute job-A"
       pool:
-        name: 'test-windows-vm'
+        vmImage: 'ubuntu-latest'
       steps:
         - script: |
             echo "A completed..."
